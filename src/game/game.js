@@ -2,15 +2,15 @@ import { setGameState, setScore, setDeathclock, setGameStartTime, getDeathclock,
 import { getCamera } from '../core/scene.js';
 import { getPlayer, resetPlayer } from '../player/player.js';
 import { resetGun } from '../player/gun.js';
-import { clearEnemies } from '../enemies/enemySystem.js';
 import { clearBullets } from '../combat/bullets.js';
+import { clearRemotePlayers } from '../multiplayer/remotePlayer.js';
 import { updateUI } from '../ui/ui.js';
 
 export function startGame() {
     setGameState('playing');
     setScore(0);
-    setDeathclock(10.0); // Start with 10 seconds
-    clearEnemies();
+    setDeathclock(10.0); // Start with 10 seconds (legacy - will be removed)
+    // Note: Don't clear remote players in multiplayer
     clearBullets();
     setGameStartTime(performance.now() / 1000); // Track game start time
     

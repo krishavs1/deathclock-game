@@ -3,6 +3,8 @@ import { getCamera } from '../core/scene.js';
 import { MOVE_SPEED } from '../core/constants.js';
 import { getKeys } from './input.js';
 import { updateGunPosition } from './gun.js';
+import { sendInput, getClientPrediction } from '../network/networkManager.js';
+import { getGameState } from '../game/state.js';
 
 let player = null;
 
@@ -10,9 +12,17 @@ export function createPlayer() {
     player = {
         position: new THREE.Vector3(0, 1.6, 0),
         velocity: new THREE.Vector3(0, 0, 0),
-        direction: new THREE.Vector3(0, 0, -1)
+        direction: new THREE.Vector3(0, 0, -1),
+        playerId: null, // Will be set when network initializes
+        isLocal: true
     };
     return player;
+}
+
+export function setPlayerNetworkId(playerId) {
+    if (player) {
+        player.playerId = playerId;
+    }
 }
 
 export function getPlayer() {
@@ -30,6 +40,18 @@ export function resetPlayer() {
 export function updatePlayer(deltaTime) {
     const keys = getKeys();
     const camera = getCamera();
+    const gameState = getGameState();
+
+    // Send input to server (multiplayer)
+    if (gameState === 'playing') {
+        const rotation = {
+            x: camera.rotation.x,
+            y: camera.rotation.y
+        };
+        sendInput(keys, rotation);
+    }
+
+    // Client-side prediction for local player
     const moveVector = new THREE.Vector3();
     const forward = new THREE.Vector3(0, 0, -1);
     const right = new THREE.Vector3(1, 0, 0);
@@ -57,11 +79,21 @@ export function updatePlayer(deltaTime) {
     player.position.z = Math.max(-boundary, Math.min(boundary, player.position.z));
 
     camera.position.copy(player.position);
-    
+
     // Always ensure camera never rolls (keep ground level)
     camera.rotation.z = 0;
-    
+
     // Update gun position and rotation to follow camera (FPV style)
     updateGunPosition();
+
+    // Store predicted position for client prediction
+    const clientPrediction = getClientPrediction();
+    if (clientPrediction && gameState === 'playing') {
+        const rotation = {
+            x: camera.rotation.x,
+            y: camera.rotation.y
+        };
+        clientPrediction.addInput(keys, rotation, player.position);
+    }
 }
 
