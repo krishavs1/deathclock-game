@@ -1,0 +1,18 @@
+{
+  "name": "3d-shooter-game",
+  "version": "1.0.0",
+  "description": "A 3D shooter game built with Three.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": ["three.js", "game", "3d", "shooter"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}
+
+
