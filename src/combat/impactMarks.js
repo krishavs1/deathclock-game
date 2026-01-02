@@ -7,7 +7,7 @@ let impactMarks = [];
 
 // Maximum number of marks to keep (prevent memory issues)
 const MAX_MARKS = 100;
-const MARK_PROXIMITY_THRESHOLD = 0.5; // Distance threshold to consider marks "at the same spot"
+const MARK_PROXIMITY_THRESHOLD = 0.15; // Distance threshold to consider marks "at the same spot" (smaller = marks need to be closer to rotate existing mark)
 
 export function createImpactMark(position, normal) {
     const scene = getScene();
