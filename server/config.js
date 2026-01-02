@@ -14,7 +14,7 @@ export const SERVER_CONFIG = {
     },
 
     physics: {
-        moveSpeed: 5,
+        moveSpeed: 7, // Increased from 5 for faster running
         bulletSpeed: 50,
         bulletLifetime: 2, // seconds
         worldBoundary: 90,

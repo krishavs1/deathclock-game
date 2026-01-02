@@ -20,10 +20,18 @@ export function setupEventListeners() {
     // Keyboard
     document.addEventListener('keydown', (e) => {
         keys[e.code] = true;
+        // Prevent spacebar from scrolling the page
+        if (e.code === 'Space' && getGameState() === 'playing') {
+            e.preventDefault();
+        }
     });
 
     document.addEventListener('keyup', (e) => {
         keys[e.code] = false;
+        // Prevent spacebar from scrolling the page
+        if (e.code === 'Space' && getGameState() === 'playing') {
+            e.preventDefault();
+        }
     });
 
     // Mouse movement

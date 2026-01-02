@@ -14,11 +14,11 @@ export function createRemotePlayer(playerId, playerData) {
 
     // Create player model
     const playerParts = createPlayerModel(playerId, playerData.name || playerId, playerColorIndex++);
-    // Set position with Y at ground level (feet on ground)
-    // Server sends eye/camera height, but model should be positioned at ground level
+    // Set position: server sends eye/camera height, player model's head is at y=1.5 relative to group
+    // So set group y = serverY - 1.5 to align head with eye position
     playerParts.group.position.set(
         playerData.position.x,
-        0, // Ground level - player model's feet should be at y=0
+        Math.max(0, playerData.position.y - 1.5), // Offset so head aligns with eye position, but don't go below ground
         playerData.position.z
     );
 
@@ -60,13 +60,21 @@ export function updateRemotePlayers(deltaTime) {
 
         if (interpolatedState) {
             // Update position
-            // Use X and Z from server, but set Y to 0 so feet are on ground
-            // (Server sends eye/camera height at y=1.6, but model should be at ground level)
+            // Use X and Z from server
+            // For Y: server sends eye/camera height, player model's head is at y=1.5 relative to group
+            // So set group y = serverY - 1.5 to align head with eye position
+            // When on ground (serverY=1.6), group will be at y=0.1 (feet slightly above ground, acceptable)
+            // When jumping, head will match eye position correctly
             player.mesh.position.set(
                 interpolatedState.position.x,
-                0, // Ground level - player model's feet should be at y=0
+                interpolatedState.position.y - 1.5, // Offset so head aligns with eye position
                 interpolatedState.position.z
             );
+            
+            // Ensure feet don't go below ground (safety check)
+            if (player.mesh.position.y < 0) {
+                player.mesh.position.y = 0;
+            }
 
             // Update rotation (only yaw for now)
             player.mesh.rotation.y = interpolatedState.rotation.y;

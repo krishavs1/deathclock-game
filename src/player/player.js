@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { getCamera } from '../core/scene.js';
-import { MOVE_SPEED } from '../core/constants.js';
+import { MOVE_SPEED, JUMP_FORCE, GRAVITY, GROUND_HEIGHT } from '../core/constants.js';
 import { getKeys } from './input.js';
 import { updateGunPosition } from './gun.js';
 import { sendInput, getClientPrediction } from '../network/networkManager.js';
@@ -11,8 +11,10 @@ let player = null;
 
 export function createPlayer() {
     player = {
-        position: new THREE.Vector3(0, 1.6, 0),
+        position: new THREE.Vector3(0, GROUND_HEIGHT, 0),
         velocity: new THREE.Vector3(0, 0, 0),
+        verticalVelocity: 0, // Separate vertical velocity for jumping
+        isGrounded: true,
         direction: new THREE.Vector3(0, 0, -1),
         playerId: null, // Will be set when network initializes
         isLocal: true
@@ -32,8 +34,10 @@ export function getPlayer() {
 
 export function resetPlayer() {
     if (player) {
-        player.position.set(0, 1.6, 0);
+        player.position.set(0, GROUND_HEIGHT, 0);
         player.velocity.set(0, 0, 0);
+        player.verticalVelocity = 0;
+        player.isGrounded = true;
         player.direction.set(0, 0, -1);
     }
 }
@@ -50,6 +54,27 @@ export function updatePlayer(deltaTime) {
             y: camera.rotation.y
         };
         sendInput(keys, rotation);
+    }
+
+    // Handle jumping
+    if (keys['Space'] && player.isGrounded) {
+        player.verticalVelocity = JUMP_FORCE;
+        player.isGrounded = false;
+    }
+
+    // Apply gravity
+    if (!player.isGrounded) {
+        player.verticalVelocity += GRAVITY * deltaTime;
+    }
+
+    // Update vertical position
+    player.position.y += player.verticalVelocity * deltaTime;
+
+    // Check if player hit ground
+    if (player.position.y <= GROUND_HEIGHT) {
+        player.position.y = GROUND_HEIGHT;
+        player.verticalVelocity = 0;
+        player.isGrounded = true;
     }
 
     // Client-side prediction for local player

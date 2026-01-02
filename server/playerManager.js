@@ -11,6 +11,8 @@ export class Player {
         this.position = new Vector3(0, 1.6, 0);
         this.rotation = { x: 0, y: 0 }; // pitch and yaw
         this.velocity = new Vector3(0, 0, 0);
+        this.verticalVelocity = 0; // Separate vertical velocity for jumping
+        this.isGrounded = true;
         this.health = SERVER_CONFIG.combat.playerHealth;
         this.maxHealth = SERVER_CONFIG.combat.playerHealth;
         this.kills = 0;
@@ -61,6 +63,8 @@ export class Player {
             Math.sin(angle) * distance
         );
         this.velocity.set(0, 0, 0);
+        this.verticalVelocity = 0;
+        this.isGrounded = true;
     }
 }
 

@@ -7,16 +7,46 @@ export class PhysicsServer {
     constructor() {
         this.boundary = SERVER_CONFIG.physics.worldBoundary;
         this.moveSpeed = SERVER_CONFIG.physics.moveSpeed;
+        this.jumpForce = 12; // Increased from 8 for higher jump
+        this.gravity = -25; // Increased (more negative) for faster/snappier jump feel
+        this.groundHeight = 1.6; // Player eye height when on ground
     }
 
     updatePlayerMovement(player, inputs, rotation, deltaTime) {
         if (!player.isAlive) return;
+
+        // Initialize vertical velocity if not present
+        if (player.verticalVelocity === undefined) {
+            player.verticalVelocity = 0;
+            player.isGrounded = true;
+        }
 
         // Update rotation
         player.rotation = {
             x: clamp(rotation.x, -Math.PI / 2, Math.PI / 2),
             y: rotation.y
         };
+
+        // Handle jumping
+        if ((inputs.Space || inputs[' ']) && player.isGrounded) {
+            player.verticalVelocity = this.jumpForce;
+            player.isGrounded = false;
+        }
+
+        // Apply gravity
+        if (!player.isGrounded) {
+            player.verticalVelocity += this.gravity * deltaTime;
+        }
+
+        // Update vertical position
+        player.position.y += player.verticalVelocity * deltaTime;
+
+        // Check if player hit ground
+        if (player.position.y <= this.groundHeight) {
+            player.position.y = this.groundHeight;
+            player.verticalVelocity = 0;
+            player.isGrounded = true;
+        }
 
         // Calculate movement vector from inputs
         const moveVector = new Vector3();
@@ -47,9 +77,6 @@ export class PhysicsServer {
         // Keep player within bounds
         player.position.x = clamp(player.position.x, -this.boundary, this.boundary);
         player.position.z = clamp(player.position.z, -this.boundary, this.boundary);
-
-        // Keep y at player height
-        player.position.y = 1.6;
     }
 
     validateMovement(player, newPosition, deltaTime) {
