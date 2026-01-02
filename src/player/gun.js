@@ -3,6 +3,7 @@ import { getScene } from '../core/scene.js';
 import { getCamera } from '../core/scene.js';
 import { BULLET_SPEED } from '../core/constants.js';
 import { createBullet } from '../combat/bullets.js';
+import { createImpactMark } from '../combat/impactMarks.js';
 
 let gun = null;
 let gunRecoil = 0;
@@ -85,10 +86,40 @@ export function updateGunPosition() {
     if (!gun) return;
     
     const camera = getCamera();
+    
     // Calculate gun position relative to camera
+    // Base offset: right, down, forward (in camera space)
     const gunOffset = new THREE.Vector3(0.8, -0.6, -1.5);
     gunOffset.applyQuaternion(camera.quaternion);
-    gun.position.copy(camera.position).add(gunOffset);
+    
+    let newGunPosition = camera.position.clone().add(gunOffset);
+    
+    // Calculate where the gun barrel tip would be (gun extends forward about 2.2 units from center)
+    // The barrel goes from z=-1.0 to z=-2.0, and sight extends to -2.0, so tip is around -2.2
+    const forward = new THREE.Vector3(0, 0, -1);
+    forward.applyQuaternion(camera.quaternion);
+    const barrelTipOffset = forward.clone().multiplyScalar(2.2);
+    const barrelTip = newGunPosition.clone().add(barrelTipOffset);
+    
+    // Prevent gun and barrel from going below ground level
+    const groundLevel = 0.15; // Minimum height above ground
+    const minGunY = groundLevel;
+    const minBarrelY = groundLevel; // Barrel tip must be above ground
+    
+    // Adjust gun position if it or its barrel would go below ground
+    if (newGunPosition.y < minGunY || barrelTip.y < minBarrelY) {
+        // Calculate how much we need to raise the gun
+        const gunRaise = Math.max(
+            minGunY - newGunPosition.y,
+            minBarrelY - barrelTip.y
+        );
+        
+        if (gunRaise > 0) {
+            newGunPosition.y += gunRaise;
+        }
+    }
+    
+    gun.position.copy(newGunPosition);
     
     // Match camera rotation exactly (straight up and down)
     gun.rotation.copy(camera.rotation);
@@ -100,6 +131,21 @@ export function updateGunPosition() {
         recoilOffset.applyQuaternion(camera.quaternion);
         gun.position.add(recoilOffset);
         gun.rotation.x -= gunRecoil * 0.5;
+        
+        // Re-check ground level after recoil
+        const forwardAfterRecoil = new THREE.Vector3(0, 0, -1);
+        forwardAfterRecoil.applyQuaternion(camera.quaternion);
+        const barrelTipAfterRecoil = gun.position.clone().add(forwardAfterRecoil.multiplyScalar(2.2));
+        
+        if (gun.position.y < minGunY || barrelTipAfterRecoil.y < minBarrelY) {
+            const gunRaise = Math.max(
+                minGunY - gun.position.y,
+                minBarrelY - barrelTipAfterRecoil.y
+            );
+            if (gunRaise > 0) {
+                gun.position.y += gunRaise;
+            }
+        }
         
         // Decay recoil
         gunRecoil *= 0.85;
@@ -113,11 +159,31 @@ export function updateGunPosition() {
 
 export function shoot() {
     const camera = getCamera();
+    const scene = getScene();
     const direction = new THREE.Vector3(0, 0, -1);
     direction.applyQuaternion(camera.quaternion);
     direction.normalize();
 
     createBullet(camera.position, direction);
+
+    // Client-side raycast to immediately show impact mark on walls/obstacles
+    const raycaster = new THREE.Raycaster(camera.position, direction, 0, 100);
+    const objectsToCheck = [];
+    
+    // Get all meshes in the scene (walls, obstacles, etc.)
+    scene.traverse((object) => {
+        if (object.isMesh && object !== gun && object.parent !== gun) {
+            objectsToCheck.push(object);
+        }
+    });
+    
+    const intersects = raycaster.intersectObjects(objectsToCheck, false);
+    if (intersects.length > 0) {
+        const hit = intersects[0];
+        // Create impact mark at hit point
+        createImpactMark(hit.point, hit.face.normal);
+        console.log('Raycast hit:', hit.point, 'normal:', hit.face.normal);
+    }
 
     // Gun recoil animation
     if (gun) {

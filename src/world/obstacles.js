@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { registerCollisionObject } from './collision.js';
 
 export function createObstacles(scene) {
     const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0x696969 });
@@ -18,6 +19,9 @@ export function createObstacles(scene) {
         obstacle.castShadow = true;
         obstacle.receiveShadow = true;
         scene.add(obstacle);
+        
+        // Register for collision detection
+        registerCollisionObject(obstacle);
     }
 }
 
