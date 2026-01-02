@@ -94,6 +94,14 @@ async function init() {
         setGameState('gameover');
     });
 
+    on('hit', (data) => {
+        console.log('Bullet hit:', data);
+        // Create impact mark when bullet hits something
+        import('./combat/bullets.js').then(({ handleBulletImpact }) => {
+            handleBulletImpact(data);
+        });
+    });
+
     // Auto-join game (can be triggered by UI later)
     setTimeout(() => {
         joinGame('Player'); // TODO: Get name from UI

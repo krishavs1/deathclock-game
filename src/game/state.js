@@ -1,6 +1,5 @@
 let gameState = 'menu'; // 'menu', 'playing', 'gameover'
 let score = 0;
-let deathclock = 10.0; // Time in seconds (legacy, will be removed for multiplayer)
 let gameStartTime = 0;
 
 // Multiplayer state
@@ -28,18 +27,6 @@ export function setScore(value) {
 
 export function addScore(value) {
     score += value;
-}
-
-export function getDeathclock() {
-    return deathclock;
-}
-
-export function setDeathclock(value) {
-    deathclock = value;
-}
-
-export function addDeathclock(value) {
-    deathclock += value;
 }
 
 export function getGameStartTime() {

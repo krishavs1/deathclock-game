@@ -3,6 +3,7 @@ import { getScene } from '../core/scene.js';
 import { getCamera } from '../core/scene.js';
 import { BULLET_SPEED } from '../core/constants.js';
 import { createBullet } from '../combat/bullets.js';
+import { createImpactMark } from '../combat/impactMarks.js';
 
 let gun = null;
 let gunRecoil = 0;
@@ -113,11 +114,31 @@ export function updateGunPosition() {
 
 export function shoot() {
     const camera = getCamera();
+    const scene = getScene();
     const direction = new THREE.Vector3(0, 0, -1);
     direction.applyQuaternion(camera.quaternion);
     direction.normalize();
 
     createBullet(camera.position, direction);
+
+    // Client-side raycast to immediately show impact mark on walls/obstacles
+    const raycaster = new THREE.Raycaster(camera.position, direction, 0, 100);
+    const objectsToCheck = [];
+    
+    // Get all meshes in the scene (walls, obstacles, etc.)
+    scene.traverse((object) => {
+        if (object.isMesh && object !== gun && object.parent !== gun) {
+            objectsToCheck.push(object);
+        }
+    });
+    
+    const intersects = raycaster.intersectObjects(objectsToCheck, false);
+    if (intersects.length > 0) {
+        const hit = intersects[0];
+        // Create impact mark at hit point
+        createImpactMark(hit.point, hit.face.normal);
+        console.log('Raycast hit:', hit.point, 'normal:', hit.face.normal);
+    }
 
     // Gun recoil animation
     if (gun) {

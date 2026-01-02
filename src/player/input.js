@@ -1,10 +1,12 @@
 import { getCamera } from '../core/scene.js';
-import { MOUSE_SENSITIVITY } from '../core/constants.js';
+import { MOUSE_SENSITIVITY, FIRE_RATE } from '../core/constants.js';
 import { getGameState } from '../game/state.js';
 import { shoot } from './gun.js';
 
 let keys = {};
 let isPointerLocked = false;
+let isMouseDown = false;
+let shootingInterval = null;
 
 export function getKeys() {
     return keys;
@@ -36,13 +38,28 @@ export function setupEventListeners() {
 
     document.addEventListener('pointerlockchange', () => {
         isPointerLocked = document.pointerLockElement === document.body;
+        // Stop shooting if pointer lock is lost
+        if (!isPointerLocked) {
+            stopShooting();
+        }
     });
 
-    // Shooting
-    document.addEventListener('click', (e) => {
-        if (getGameState() === 'playing' && isPointerLocked) {
-            shoot();
+    // Shooting - continuous fire on mouse hold
+    document.addEventListener('mousedown', (e) => {
+        if (getGameState() === 'playing' && isPointerLocked && e.button === 0) {
+            startShooting();
         }
+    });
+
+    document.addEventListener('mouseup', (e) => {
+        if (e.button === 0) {
+            stopShooting();
+        }
+    });
+
+    // Also handle when mouse leaves window
+    document.addEventListener('mouseleave', () => {
+        stopShooting();
     });
 
     // Window resize
@@ -83,5 +100,34 @@ function onMouseMove(e) {
     
     // Set rotation order to prevent gimbal lock issues
     camera.rotation.order = 'YXZ';
+}
+
+function startShooting() {
+    if (shootingInterval) return; // Already shooting
+    
+    isMouseDown = true;
+    const fireDelay = 1000 / FIRE_RATE; // Convert to milliseconds
+    
+    // Shoot immediately
+    if (getGameState() === 'playing' && isPointerLocked) {
+        shoot();
+    }
+    
+    // Then continue shooting at fire rate
+    shootingInterval = setInterval(() => {
+        if (getGameState() === 'playing' && isPointerLocked && isMouseDown) {
+            shoot();
+        } else {
+            stopShooting();
+        }
+    }, fireDelay);
+}
+
+function stopShooting() {
+    isMouseDown = false;
+    if (shootingInterval) {
+        clearInterval(shootingInterval);
+        shootingInterval = null;
+    }
 }
 

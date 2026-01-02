@@ -1,17 +1,18 @@
-import { setGameState, setScore, setDeathclock, setGameStartTime, getDeathclock, getScore } from './state.js';
+import { setGameState, setScore, setGameStartTime, getScore } from './state.js';
 import { getCamera } from '../core/scene.js';
 import { getPlayer, resetPlayer } from '../player/player.js';
 import { resetGun } from '../player/gun.js';
 import { clearBullets } from '../combat/bullets.js';
+import { clearImpactMarks } from '../combat/impactMarks.js';
 import { clearRemotePlayers } from '../multiplayer/remotePlayer.js';
 import { updateUI } from '../ui/ui.js';
 
 export function startGame() {
     setGameState('playing');
     setScore(0);
-    setDeathclock(10.0); // Start with 10 seconds (legacy - will be removed)
     // Note: Don't clear remote players in multiplayer
     clearBullets();
+    clearImpactMarks();
     setGameStartTime(performance.now() / 1000); // Track game start time
     
     resetPlayer();
@@ -39,14 +40,4 @@ export function gameOver() {
     document.getElementById('gameOverScreen').classList.remove('hidden');
 }
 
-export function updateDeathclock(deltaTime) {
-    const currentDeathclock = getDeathclock();
-    const newDeathclock = currentDeathclock - deltaTime;
-    if (newDeathclock <= 0) {
-        setDeathclock(0);
-        gameOver();
-    } else {
-        setDeathclock(newDeathclock);
-    }
-}
 

@@ -28,13 +28,12 @@ function animate(currentTime = 0) {
         updateUI();
     }
 
-    // Always update remote players (even in lobby)
+    // Always update remote players and bullets (even in lobby)
     if (gameState !== 'playing') {
         updateRemotePlayers(deltaTime);
+        updateBullets(deltaTime);
     }
     
     renderer.render(scene, camera);
 }
-
-// Enemy spawn functions removed - now using multiplayer
 
