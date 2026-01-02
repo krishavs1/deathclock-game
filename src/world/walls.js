@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { registerCollisionObject } from './collision.js';
 
 export function createWalls(scene) {
     const wallHeight = 5;
@@ -15,6 +16,7 @@ export function createWalls(scene) {
     northWall.castShadow = true;
     northWall.receiveShadow = true;
     scene.add(northWall);
+    registerCollisionObject(northWall);
 
     // South wall
     const southWall = new THREE.Mesh(
@@ -25,6 +27,7 @@ export function createWalls(scene) {
     southWall.castShadow = true;
     southWall.receiveShadow = true;
     scene.add(southWall);
+    registerCollisionObject(southWall);
 
     // East wall
     const eastWall = new THREE.Mesh(
@@ -35,6 +38,7 @@ export function createWalls(scene) {
     eastWall.castShadow = true;
     eastWall.receiveShadow = true;
     scene.add(eastWall);
+    registerCollisionObject(eastWall);
 
     // West wall
     const westWall = new THREE.Mesh(
@@ -45,5 +49,6 @@ export function createWalls(scene) {
     westWall.castShadow = true;
     westWall.receiveShadow = true;
     scene.add(westWall);
+    registerCollisionObject(westWall);
 }
 

@@ -14,9 +14,11 @@ export function createRemotePlayer(playerId, playerData) {
 
     // Create player model
     const playerParts = createPlayerModel(playerId, playerData.name || playerId, playerColorIndex++);
+    // Set position with Y at ground level (feet on ground)
+    // Server sends eye/camera height, but model should be positioned at ground level
     playerParts.group.position.set(
         playerData.position.x,
-        playerData.position.y,
+        0, // Ground level - player model's feet should be at y=0
         playerData.position.z
     );
 
@@ -58,7 +60,13 @@ export function updateRemotePlayers(deltaTime) {
 
         if (interpolatedState) {
             // Update position
-            player.mesh.position.copy(interpolatedState.position);
+            // Use X and Z from server, but set Y to 0 so feet are on ground
+            // (Server sends eye/camera height at y=1.6, but model should be at ground level)
+            player.mesh.position.set(
+                interpolatedState.position.x,
+                0, // Ground level - player model's feet should be at y=0
+                interpolatedState.position.z
+            );
 
             // Update rotation (only yaw for now)
             player.mesh.rotation.y = interpolatedState.rotation.y;

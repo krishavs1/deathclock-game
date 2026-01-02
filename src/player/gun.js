@@ -86,10 +86,40 @@ export function updateGunPosition() {
     if (!gun) return;
     
     const camera = getCamera();
+    
     // Calculate gun position relative to camera
+    // Base offset: right, down, forward (in camera space)
     const gunOffset = new THREE.Vector3(0.8, -0.6, -1.5);
     gunOffset.applyQuaternion(camera.quaternion);
-    gun.position.copy(camera.position).add(gunOffset);
+    
+    let newGunPosition = camera.position.clone().add(gunOffset);
+    
+    // Calculate where the gun barrel tip would be (gun extends forward about 2.2 units from center)
+    // The barrel goes from z=-1.0 to z=-2.0, and sight extends to -2.0, so tip is around -2.2
+    const forward = new THREE.Vector3(0, 0, -1);
+    forward.applyQuaternion(camera.quaternion);
+    const barrelTipOffset = forward.clone().multiplyScalar(2.2);
+    const barrelTip = newGunPosition.clone().add(barrelTipOffset);
+    
+    // Prevent gun and barrel from going below ground level
+    const groundLevel = 0.15; // Minimum height above ground
+    const minGunY = groundLevel;
+    const minBarrelY = groundLevel; // Barrel tip must be above ground
+    
+    // Adjust gun position if it or its barrel would go below ground
+    if (newGunPosition.y < minGunY || barrelTip.y < minBarrelY) {
+        // Calculate how much we need to raise the gun
+        const gunRaise = Math.max(
+            minGunY - newGunPosition.y,
+            minBarrelY - barrelTip.y
+        );
+        
+        if (gunRaise > 0) {
+            newGunPosition.y += gunRaise;
+        }
+    }
+    
+    gun.position.copy(newGunPosition);
     
     // Match camera rotation exactly (straight up and down)
     gun.rotation.copy(camera.rotation);
@@ -101,6 +131,21 @@ export function updateGunPosition() {
         recoilOffset.applyQuaternion(camera.quaternion);
         gun.position.add(recoilOffset);
         gun.rotation.x -= gunRecoil * 0.5;
+        
+        // Re-check ground level after recoil
+        const forwardAfterRecoil = new THREE.Vector3(0, 0, -1);
+        forwardAfterRecoil.applyQuaternion(camera.quaternion);
+        const barrelTipAfterRecoil = gun.position.clone().add(forwardAfterRecoil.multiplyScalar(2.2));
+        
+        if (gun.position.y < minGunY || barrelTipAfterRecoil.y < minBarrelY) {
+            const gunRaise = Math.max(
+                minGunY - gun.position.y,
+                minBarrelY - barrelTipAfterRecoil.y
+            );
+            if (gunRaise > 0) {
+                gun.position.y += gunRaise;
+            }
+        }
         
         // Decay recoil
         gunRecoil *= 0.85;

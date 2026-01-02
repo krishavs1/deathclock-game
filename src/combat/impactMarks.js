@@ -8,6 +8,7 @@ let impactMarks = [];
 // Maximum number of marks to keep (prevent memory issues)
 const MAX_MARKS = 100;
 const MARK_PROXIMITY_THRESHOLD = 0.15; // Distance threshold to consider marks "at the same spot" (smaller = marks need to be closer to rotate existing mark)
+const MARK_LIFETIME = 3000; // 3 seconds in milliseconds
 
 export function createImpactMark(position, normal) {
     const scene = getScene();
@@ -63,19 +64,37 @@ export function createImpactMark(position, normal) {
     mark.rotateOnAxis(normal, randomRotation);
     
     scene.add(mark);
+    
+    // Store creation time for lifetime management
+    mark.userData.createdAt = Date.now();
+    
     impactMarks.push(mark);
     
     console.log('Impact mark created at:', mark.position, 'total marks:', impactMarks.length);
     
+    // Set timeout to remove mark after 3 seconds
+    setTimeout(() => {
+        removeImpactMark(mark);
+    }, MARK_LIFETIME);
+    
     // Limit the number of marks
     if (impactMarks.length > MAX_MARKS) {
         const oldMark = impactMarks.shift();
-        scene.remove(oldMark);
-        oldMark.geometry.dispose();
-        oldMark.material.dispose();
+        removeImpactMark(oldMark);
     }
     
     return mark;
+}
+
+function removeImpactMark(mark) {
+    const scene = getScene();
+    const index = impactMarks.indexOf(mark);
+    if (index !== -1) {
+        scene.remove(mark);
+        mark.geometry.dispose();
+        mark.material.dispose();
+        impactMarks.splice(index, 1);
+    }
 }
 
 export function clearImpactMarks() {

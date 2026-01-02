@@ -5,6 +5,7 @@ import { getKeys } from './input.js';
 import { updateGunPosition } from './gun.js';
 import { sendInput, getClientPrediction } from '../network/networkManager.js';
 import { getGameState } from '../game/state.js';
+import { checkCollision, resolveCollision } from '../world/collision.js';
 
 let player = null;
 
@@ -71,7 +72,19 @@ export function updatePlayer(deltaTime) {
     moveVector.normalize();
     moveVector.multiplyScalar(MOVE_SPEED * deltaTime);
 
-    player.position.add(moveVector);
+    // Store old position for collision detection
+    const oldPosition = player.position.clone();
+    const newPosition = oldPosition.clone().add(moveVector);
+
+    // Check for collisions with obstacles and walls
+    if (checkCollision(newPosition, 0.5)) {
+        // Try to slide along the obstacle
+        const resolvedPosition = resolveCollision(oldPosition, newPosition, 0.5);
+        player.position.copy(resolvedPosition);
+    } else {
+        // No collision, move normally
+        player.position.copy(newPosition);
+    }
 
     // Keep player within bounds
     const boundary = 90;
