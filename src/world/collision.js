@@ -65,3 +65,25 @@ export function resolveCollision(oldPosition, newPosition, radius = 0.5) {
     return oldPosition;
 }
 
+// Check if a point (like gun position) would collide with any collision object
+export function checkPointCollision(point, radius = 0.1) {
+    for (const obj of collisionObjects) {
+        // Get object's bounding box
+        const box = new THREE.Box3().setFromObject(obj);
+        
+        // Check if point is inside the box
+        if (box.containsPoint(point)) {
+            return true;
+        }
+        
+        // Check if point is within radius of the box
+        const closestPoint = box.clampPoint(point, new THREE.Vector3());
+        const distance = point.distanceTo(closestPoint);
+        if (distance < radius) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+

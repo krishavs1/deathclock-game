@@ -4,6 +4,7 @@ import { getCamera } from '../core/scene.js';
 import { BULLET_SPEED } from '../core/constants.js';
 import { createBullet } from '../combat/bullets.js';
 import { createImpactMark } from '../combat/impactMarks.js';
+import { checkPointCollision } from '../world/collision.js';
 
 let gun = null;
 let gunRecoil = 0;
@@ -116,6 +117,45 @@ export function updateGunPosition() {
         
         if (gunRaise > 0) {
             newGunPosition.y += gunRaise;
+        }
+    }
+    
+    // Check for collisions with buildings/walls
+    // If gun or barrel tip would collide, pull gun back towards camera
+    const gunCollisionRadius = 0.15; // Small radius for gun collision check
+    const barrelCollisionRadius = 0.1; // Even smaller for barrel tip
+    
+    if (checkPointCollision(newGunPosition, gunCollisionRadius) || 
+        checkPointCollision(barrelTip, barrelCollisionRadius)) {
+        // Pull gun back towards camera until it no longer collides
+        const directionToCamera = new THREE.Vector3().subVectors(camera.position, newGunPosition);
+        const distanceToCamera = directionToCamera.length();
+        directionToCamera.normalize();
+        
+        const maxPullback = Math.min(1.5, distanceToCamera * 0.8); // Don't pull back more than 80% of distance to camera
+        let pullbackDistance = 0;
+        const pullbackStep = 0.05; // Small steps to find safe position
+        
+        while (pullbackDistance < maxPullback) {
+            pullbackDistance += pullbackStep;
+            const testPosition = newGunPosition.clone().add(
+                directionToCamera.clone().multiplyScalar(pullbackDistance)
+            );
+            // Recalculate barrel tip for new position
+            const testBarrelTip = testPosition.clone().add(barrelTipOffset);
+            
+            // Check if this position is safe
+            if (!checkPointCollision(testPosition, gunCollisionRadius) && 
+                !checkPointCollision(testBarrelTip, barrelCollisionRadius)) {
+                newGunPosition = testPosition;
+                break;
+            }
+        }
+        
+        // If we couldn't find a safe position, just pull it very close to camera
+        if (pullbackDistance >= maxPullback) {
+            const safeOffset = directionToCamera.clone().multiplyScalar(-0.2); // Very close to camera
+            newGunPosition = camera.position.clone().add(safeOffset);
         }
     }
     
